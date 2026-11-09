@@ -1,25 +1,31 @@
 # Laboratorio 3: aplicación inteligente adaptativa
 
-## Identificación
+**Integrantes:** German Oses, Joshua Villavicencio y Fernando Figueroa  
+**Asignatura:** Ingeniería Web Avanzada, OII436-1  
+**Fecha:** 9 de noviembre de 2026  
+**Repositorio:** https://github.com/German-Oses/laboratorio3
 
-- Integrantes: German Oses, Joshua Villavicencio y Fernando Figueroa.
-- Asignatura: Ingeniería Web Avanzada, OII436-1, segundo semestre de 2026.
-- Fecha de ejecución: 9 de noviembre de 2026.
-- Repositorio GitHub: https://github.com/German-Oses/laboratorio3
+## Descripción del trabajo
 
-Recomendador de recursos de aprendizaje por consola. Utiliza TF-IDF de etiquetas,
-similitud del coseno y actualización automática del perfil ante «Me interesa».
-Se completaron las cuatro funciones de `motor.py`; `app.py` y los archivos de datos
-se conservan tal como fueron entregados. No se requiere Angular.
+La aplicación recomienda recursos de aprendizaje a partir de los intereses de cada
+usuario. Por ejemplo, alguien que declara interés en Python y datos recibe recursos
+distintos de quien busca contenidos sobre Angular. Además, cuando el usuario marca
+un recurso con «Me interesa», el programa incorpora esa preferencia a su perfil y
+vuelve a calcular las recomendaciones en la misma sesión.
 
-## Entorno y reproducción
+El trabajo se desarrolló sobre el material base del laboratorio. Las cuatro
+funciones de `motor.py` están completas y se utilizan desde la aplicación de
+consola. Se conservaron `app.py`, el catálogo y los perfiles iniciales del material
+para poder ejecutar las pruebas con los mismos datos.
 
-Validado con **Python 3.12.14 en Windows**, dentro de un entorno virtual separado.
-Las versiones exactas de las dependencias y sus dependencias transitivas están en
-`requirements.txt`, generado con `python -m pip freeze` en ese entorno.
-Dependencias principales: NumPy 2.5.4, Pandas 3.1.1 y scikit-learn 1.9.1.
+## Cómo ejecutar la aplicación
 
-Desde una copia del repositorio, abrir una terminal en la carpeta que contiene `app.py`:
+La versión utilizada fue Python 3.12.14 en Windows. El proyecto depende de NumPy,
+Pandas y scikit-learn; `requirements.txt` incluye las versiones instaladas y las
+dependencias que necesitan estas bibliotecas.
+
+Después de descargar o clonar el repositorio, se debe abrir una terminal en la
+carpeta que contiene `app.py`. En PowerShell, la preparación es la siguiente:
 
 ```powershell
 python -m venv .venv
@@ -27,61 +33,77 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 python -c "import sys; print(sys.version); print(sys.executable)"
 python app.py --comprobar
+```
+
+Si el comando disponible es `py`, se puede crear el entorno con
+`py -3.12 -m venv .venv`. En CMD se activa con
+`.venv\Scripts\activate.bat`, y en macOS o Linux con `source .venv/bin/activate`.
+También es posible ejecutar directamente el Python del entorno, por ejemplo:
+`.venv\Scripts\python.exe app.py --demo` en Windows.
+
+La comprobación de los datos mostró 12 recursos, 4 usuarios y una matriz TF-IDF de
+12 filas por 17 términos. Para ejecutar los casos T1–T4 y generar las evidencias:
+
+```powershell
 python app.py --demo
-python -m unittest -v
+```
+
+Este modo parte de los perfiles iniciales y guarda los resultados en `evidencias/`.
+Cada ejecución reemplaza el reporte JSON y el CSV de comparación. Para usar la
+consola de forma manual se ejecuta:
+
+```powershell
 python app.py
 ```
 
-Si Windows reconoce el intérprete como `py`, usar `py -3.12 -m venv .venv`.
-En CMD se activa con `.venv\Scripts\activate.bat`; en macOS/Linux,
-con `source .venv/bin/activate`. También se puede omitir la activación e invocar
-`.venv\Scripts\python.exe app.py --demo` directamente en Windows.
+Primero se elige un usuario. La opción `r` muestra recomendaciones; `c` muestra el
+catálogo; `m` permite indicar «Me interesa» escribiendo el ID de un recurso; `u`
+cambia de usuario y `s` termina la ejecución. Para repetir la prueba de adaptación,
+se elige u1, se consultan sus recomendaciones y luego se valora R04 con la opción
+`m`. Se puede seleccionar cualquier recurso del catálogo, aunque no aparezca entre
+las primeras recomendaciones.
 
-En la ejecución que generó estas evidencias se usó directamente el intérprete
-`work/venv/Scripts/python.exe`, sin activar la shell. El Python integrado del entorno
-de trabajo no pudo completar `ensurepip`; se creó el entorno y se instalaron las
-dependencias usando el pip del intérprete base con `--python` dirigido al entorno.
-Esto es una particularidad del entorno de trabajo, no un requisito del proyecto.
-La instalación requirió acceso a PyPI y una carpeta temporal con permiso de escritura.
-No se incluyen el entorno virtual ni las dependencias instaladas en la entrega.
+Los perfiles y sus historiales se mantienen mientras la aplicación está abierta.
+Al reiniciarla, se cargan otra vez los intereses de `datos/perfiles.json`.
 
-`--comprobar` informó **12 recursos, 4 usuarios y una matriz de 12 × 17**.
-`--demo` parte siempre de perfiles nuevos, imprime T1–T4 y sobrescribe las evidencias.
-Devuelve código 0 si todas cumplen y 1 si alguna falla. El modo interactivo conserva
-el estado en memoria; al reiniciar recupera los intereses iniciales del JSON.
+## Funcionamiento del recomendador
 
-Para reproducir manualmente: elegir `u1`, `r` para recomendar, `m` y `R04` para valorar;
-`u` cambia de usuario, `c` muestra el catálogo y `s` finaliza. R04 se puede seleccionar
-aunque no esté entre las tres primeras recomendaciones. Un ID desconocido muestra
-un aviso y no modifica perfiles ni historiales.
+El catálogo está en `datos/recursos.csv`. Cada fila contiene un ID, un título, una
+descripción y etiquetas. Para calcular la similitud se usan solamente las etiquetas;
+el título y la descripción ayudan a presentar el recurso. La carga elimina espacios
+al principio y al final de los campos y rechaza columnas faltantes, campos vacíos,
+un catálogo vacío o IDs repetidos. Esto evita que un mismo ID pueda referirse a dos
+recursos diferentes.
 
-## Datos y decisiones del motor
+Al iniciar, `construir_indice` ajusta un único vectorizador TF-IDF al catálogo.
+`crear_perfil` utiliza ese vectorizador para transformar los intereses en un vector
+numérico de una dimensión. Luego, `calcular_puntuaciones` compara el perfil con
+cada fila del catálogo mediante similitud del coseno.
 
-`datos/recursos.csv` conserva los 12 IDs y etiquetas originales. Solo **etiquetas**
-interviene en TF-IDF; título y descripción presentan los recursos. El ID permite
-identificarlos y resolver empates. La carga elimina espacios exteriores y rechaza
-columnas requeridas ausentes, catálogo vacío, campos vacíos e IDs duplicados con
-`ValueError`; no inventa datos ni elimina duplicados silenciosamente.
+La función `recomendar` selecciona hasta tres resultados con puntuación positiva y
+los ordena de mayor a menor. Si dos puntuaciones son iguales, se utiliza el ID en
+orden ascendente. Cada resultado incluye su título, la puntuación con cuatro
+decimales y una explicación de los términos compartidos. Los valores usados para
+calcular y ordenar no se redondean.
 
-`datos/perfiles.json` contiene los intereses iniciales: u1 `python datos pandas`,
-u2 `angular componentes interfaces`, u3 vacío y u4 `zzxyz123`. Cada usuario tiene
-su propio vector e historial. Los dos últimos perfiles producen vectores cero,
-puntuaciones cero y ninguna recomendación. Se muestra:
-«No hay coincidencias positivas. Declare intereses presentes en el catálogo.»
+Cuando se registra «Me interesa», `actualizar_perfil` combina el vector actual con
+el del recurso seleccionado:
 
-- `crear_perfil`: reutiliza `transform` del vectorizador ajustado y devuelve una fila 1D.
-- `calcular_puntuaciones`: calcula `cosine_similarity([perfil], matriz)[0]` en el orden del catálogo.
-- `recomendar`: filtra puntuaciones positivas, ordena por puntuación descendente e ID ascendente y devuelve hasta tres resultados por defecto, usando `construir_resultado`.
-- `actualizar_perfil`: normaliza `0.4 * perfil_actual + 0.6 * vector_recurso` con norma L2 y devuelve un vector 1D nuevo.
+```python
+mezcla = 0.4 * perfil + 0.6 * vector_recurso
+nuevo_perfil = normalize([mezcla])[0]
+```
 
-El índice se ajusta una sola vez. Se comparan siempre los mismos 12 candidatos,
-incluido R04 después de valorarlo. Se conservan los números sin redondear para los
-cálculos; solo la presentación se redondea. La regla 0,6 es didáctica, no optimizada.
+La interacción reciente recibe un peso de 0,6, tal como pide el laboratorio. Después
+se normaliza la mezcla para que tenga norma L2 unitaria. El nuevo vector se guarda
+solo para el usuario activo, junto con el evento en su historial. Se comparan de
+nuevo los mismos 12 recursos, incluido el que acaba de valorar.
 
-## Pruebas T1–T4
+## Pruebas realizadas
 
-Resultados obtenidos ejecutando esta implementación, registrados en
-`evidencias/reporte_demo.json` y `evidencias/puntuaciones_antes_despues.csv`.
+Las pruebas se ejecutaron con los perfiles originales: u1 tiene los intereses
+`python datos pandas`; u2, `angular componentes interfaces`; u3 tiene intereses
+vacíos y u4 contiene `zzxyz123`, que no aparece en el vocabulario.
 
 | Caso | Entrada o interacción | Resultado esperado | Resultado observado | Estado |
 |---|---|---|---|---|
@@ -90,15 +112,32 @@ Resultados obtenidos ejecutando esta implementación, registrados en
 | T3 | Consultar u2 después de actualizar u1 | Vector, historial y puntuaciones de u2 sin cambios | Las cuatro comprobaciones del reporte son verdaderas; historial vacío y ranking R07, R08, R09 intactos. | Cumple |
 | T4 | Recomendar para u3 y u4 | Lista vacía, puntuaciones cero y mensaje informativo sin fallar | Ambos producen `[]`, todas las puntuaciones cero y el mensaje indicado arriba. | Cumple |
 
-T1 confirma personalización inicial según los intereses; T2 demuestra adaptación
-causada por una interacción; T3 verifica aislamiento por usuario; T4 evita atribuir
-relevancia arbitraria cuando no hay información reconocida.
 
-`python -m unittest -v` ejecutó además **3 pruebas, todas correctas**: desempates,
-filtro de ceros y límites de resultados; rechazo de un ID inexistente sin cambios;
-y normalización, entradas intactas y efecto de actualizaciones sucesivas.
+Los resultados de T1 muestran que el perfil inicial influye en la selección: u1
+recibe contenidos relacionados con datos y Python, mientras que u2 recibe recursos
+sobre Angular. En T2, la valoración de R04 modifica el perfil de u1 y cambia tanto
+el orden como las puntuaciones. T3 comprueba que ese cambio no afecta a u2.
 
-## Recomendaciones y perfil antes y después
+En T4, el programa no encuentra términos que pueda comparar para u3 y u4. Ambos
+reciben una lista vacía y el mensaje «No hay coincidencias positivas. Declare
+intereses presentes en el catálogo.». Así se evita completar la lista con recursos
+que tienen puntuación cero.
+
+También se incluyeron tres pruebas adicionales en `test_motor.py`: una comprueba
+el desempate por ID, el filtro de ceros y el límite de resultados; otra verifica
+que un ID desconocido no cambie el estado; y la tercera revisa la normalización y
+las actualizaciones sucesivas del perfil. Las tres pasaron. Se ejecutan con:
+
+```powershell
+python -m unittest -v
+```
+
+## Análisis de la adaptación
+
+Antes de valorar R04, el recurso que mejor coincide con u1 es R02, porque tiene
+exactamente las etiquetas de sus intereses iniciales. Después de la valoración,
+el perfil incorpora `api` y `web`, y aumenta el peso de `python`. Esto hace que
+R04 pase al primer lugar y que aparezca R09 entre los tres primeros resultados.
 
 ### u1 antes de valorar R04
 
@@ -156,104 +195,119 @@ se recalcula el ranking en la misma sesión.
 | R11 | 0.205290 | 0.102605 | -0.102685 |
 | R12 | 0.496522 | 0.464168 | -0.032353 |
 
-**R09 no fue valorado:** sube de 0 a 0,495760 y entra en el tercer puesto porque sus
+R09 es un caso que permite ver el efecto de la actualización en otro recurso: sube de 0 a 0,495760 y entra en el tercer puesto porque sus
 etiquetas `angular web api` comparten los nuevos términos `web` y `api` incorporados
 al perfil a partir de R04 (`python web api`). No se añade `angular` al perfil de u1.
-**R05 tampoco fue valorado:** sube de 0 a 0,437777 por esos mismos términos compartidos.
-Esto demuestra propagación del efecto a otros candidatos, no solo una promoción del
-recurso elegido. R02 baja de 1 a 0,688010 porque el perfil deja de coincidir exactamente
+R05 también cambia sin haber sido valorado: sube de 0 a 0,437777 por esos mismos términos compartidos.
+El cambio llega a otros recursos porque se vuelve a comparar todo el catálogo con el nuevo perfil. R02 baja de 1 a 0,688010 porque el perfil deja de coincidir exactamente
 con `python datos pandas`; la normalización redistribuye los pesos.
 
-## Respuestas a las seis preguntas conceptuales
+## Preguntas conceptuales
 
-### 1. Contenido y perfil del usuario
+### 1. ¿Qué información describe los recursos y qué información forma el perfil del usuario?
 
-El contenido está en `datos/recursos.csv`: ID, título, descripción y etiquetas.
-Para calcular similitudes se utilizan únicamente las etiquetas. El perfil inicial
-está en `datos/perfiles.json`, en el campo `intereses` de cada usuario; `nombre`
-sirve para identificarlo en la interfaz. Durante la sesión, `estado` contiene el
-vector actual y `historial` sus eventos. Los intereses originales se conservan
-como punto de partida; el vector puede evolucionar sin cambiar el archivo JSON.
+Los recursos se describen en `datos/recursos.csv`. Aunque cada uno tiene título,
+descripción y etiquetas, las características que utiliza el recomendador son las
+palabras de las etiquetas. Por su parte, `datos/perfiles.json` contiene el nombre
+y los intereses iniciales de cada usuario.
 
-### 2. fit_transform y transform
+Durante la ejecución, esos intereses se representan mediante un vector que se
+guarda en `estado`. El programa mantiene además un historial independiente por
+usuario. Por eso el perfil no se limita al texto inicial: su vector puede cambiar
+con las valoraciones, sin necesidad de editar el JSON.
 
-`fit_transform` aprende del catálogo el vocabulario, el orden de sus columnas y los
-pesos IDF, y construye sus vectores. `transform` representa los intereses en ese
-mismo espacio. Ajustar otro vectorizador por usuario podría cambiar dimensiones,
-orden de términos y pesos IDF: los vectores dejarían de ser comparables, incluso
-si por casualidad tuvieran el mismo número de columnas.
+### 2. ¿Por qué se usa fit_transform en el catálogo y transform en los intereses?
 
-### 3. Diferentes recomendaciones y significado de 0,80
+Se usa `fit_transform` con el catálogo porque primero hay que aprender qué palabras
+existen y qué peso tiene cada una. Una vez definido ese vocabulario, `transform`
+permite representar los intereses usando las mismas columnas y los mismos pesos
+IDF. Esto es necesario para comparar ambos vectores.
 
-u1 y u2 tienen diferentes términos y pesos en sus vectores. Al compararlos con el
-mismo catálogo, sus direcciones coinciden con recursos distintos: datos/Python
-frente a componentes/interfaces/Angular. Una similitud de 0,80 mide proximidad
-angular entre las representaciones; **no significa un 80 % de probabilidad de gusto**.
-No existe un modelo probabilístico calibrado con valoraciones reales ni se está
-midiendo comprensión semántica del contenido.
+Si se ajustara otro vectorizador para cada usuario, una columna podría representar
+una palabra distinta o tener otro peso. Incluso podrían obtenerse vectores de
+diferente tamaño. En esas condiciones, la comparación con el catálogo perdería
+sentido.
 
-### 4. Modificación manual y adaptación
+### 3. ¿Por qué cambian las recomendaciones entre usuarios? ¿Una similitud de 0,80 equivale a un 80 % de probabilidad de gusto?
 
-Editar los intereses iniciales requiere intervención manual y define otro punto de
-partida. Aquí el evento «Me interesa» sobre R04 dispara `registrar_interes`, que
-actualiza automáticamente el vector actual de u1 mediante `actualizar_perfil` y
-añade el evento a su historial. El efecto observable es el cambio de pesos, de
-puntuaciones (incluyendo R05 y R09) y del ranking durante la misma ejecución;
-u2 y el JSON inicial no cambian.
+El catálogo es el mismo, pero cada usuario se compara con él a partir de intereses
+diferentes. En las pruebas, u1 comparte términos con recursos de Python y datos,
+mientras que u2 coincide más con contenidos de Angular e interfaces. Por eso sus
+primeros resultados son distintos.
 
-### 5. Ciclo MAPE-K
+Un valor de 0,80 indica que los vectores tienen una dirección parecida en el espacio
+TF-IDF. No equivale a una probabilidad de gusto: el programa no ha aprendido esa
+relación a partir de valoraciones reales ni calcula una probabilidad calibrada.
 
-| Etapa | Correspondencia concreta en la implementación |
-|---|---|
-| Monitorizar | `interactivo` recoge el usuario activo y el ID del recurso al seleccionar `m`; `registrar_interes` registra el evento «Me interesa». |
-| Analizar | `obtener_indice` valida el recurso; sus características TF-IDF aportan la señal de preferencia. `calcular_puntuaciones` permite evaluar la afinidad antes y después. |
-| Planificar | La política fija combina 0,4 del perfil actual con 0,6 del recurso, dentro de `actualizar_perfil`, para obtener el perfil candidato normalizado. |
-| Ejecutar | `registrar_interes` asigna el nuevo vector a `estado[usuario_id]`; `recomendar` recalcula la selección y la consola la muestra. |
-| Conocimiento | Catálogo, vocabulario y pesos IDF, matriz TF-IDF, intereses iniciales, vectores actuales e historiales separados por usuario. |
+### 4. ¿En qué se diferencia cambiar manualmente los intereses de la adaptación implementada?
 
-Es una correspondencia conceptual con MAPE-K: las etapas están integradas en
-funciones y datos de la aplicación, no en cinco servicios independientes.
+Cambiar el texto de intereses en el JSON significa definir manualmente otro punto
+de partida. En cambio, la adaptación ocurre mientras se utiliza la aplicación:
+el usuario marca R04 con «Me interesa» y el programa actualiza su vector actual.
 
-### 6. Limitación y mejora concreta
+El evento pasa por `registrar_interes`, que llama a `actualizar_perfil` y guarda
+la interacción en el historial de u1. El efecto se observa al volver a recomendar:
+R04 pasa al primer lugar y también cambian recursos como R05 y R09. Los intereses
+iniciales del archivo y el estado de u2 se conservan.
 
-El mecanismo solo reconoce coincidencias léxicas del vocabulario: un sinónimo o
-un tema ausente puede producir un vector nulo aunque el interés sea relevante.
-Una mejora concreta sería usar embeddings de las etiquetas junto con título y
-descripción, generados por un mismo modelo para recursos e intereses. Exigiría
-incorporar y fijar la versión de ese modelo, reemplazar la vectorización TF-IDF,
-recalcular el índice y validar un umbral de similitud con pares de consultas y
-recursos evaluados por personas. Esto permitiría evaluar afinidad semántica, pero
-no convertiría por sí solo la similitud en una probabilidad de gusto.
+### 5. ¿Cómo se relaciona la implementación con MAPE-K?
 
-## Problemas detectados y límites
+La etapa de **monitorización** corresponde a recoger la acción «Me interesa» en la
+consola e identificar al usuario y al recurso. Para **analizar** esa información,
+se valida el ID con `obtener_indice` y se utiliza el vector TF-IDF del recurso como
+señal de los temas que interesan al usuario.
 
-No hubo incumplimientos funcionales en T1–T4 ni en las pruebas adicionales.
-Se resolvieron las dificultades de preparación del entorno descritas arriba.
-El valor de R02 inicial se registra como `1.0000000000000002`: es error de precisión
-de punto flotante; la consola lo muestra como 1,0000. Se preserva la evidencia real
-sin reemplazarla por una cifra esperada. Los perfiles legibles del JSON están
-redondeados a seis decimales por la función auxiliar original; las puntuaciones del
-CSV se escriben sin redondeo explícito.
+La **planificación** está en la regla de actualización: combinar el perfil actual
+con el recurso usando los pesos 0,4 y 0,6. La **ejecución** ocurre cuando
+`registrar_interes` guarda el nuevo vector y se recalculan las recomendaciones.
+Finalmente, el **conocimiento** está formado por el catálogo, el vocabulario y sus
+pesos IDF, la matriz de recursos, los perfiles y los historiales. En esta aplicación
+las etapas están repartidas entre funciones y datos del programa.
 
-El estado se pierde al cerrar la aplicación, por diseño del laboratorio. No hay
-aprendizaje supervisado, persistencia de valoraciones ni evaluación con usuarios
-reales. Los cuatro casos verifican el catálogo didáctico; no demuestran calidad
-universal de las recomendaciones.
+### 6. ¿Qué limitación tiene el mecanismo y cómo podría mejorarse?
 
-## Archivos y entrega en GitHub
+Una limitación es que depende de las palabras que aparecen en el catálogo. Por
+ejemplo, un interés expresado con un sinónimo puede quedar sin coincidencias aunque
+se relacione con un recurso. El caso de u4 muestra qué sucede cuando no se reconoce
+ninguno de los términos ingresados.
 
-- `motor.py`: cuatro funciones implementadas y utilizadas por `app.py`.
-- `app.py`: consola, comprobación y demostración T1–T4 originales.
-- `datos/recursos.csv` y `datos/perfiles.json`: datos originales.
-- `evidencias/reporte_demo.json`: ejecución real con perfiles, rankings, eventos y comprobaciones.
-- `evidencias/puntuaciones_antes_despues.csv`: comparación de los 12 recursos.
-- `test_motor.py`: comprobaciones adicionales reproducibles.
-- `requirements.txt`: dependencias con versiones exactas.
-- `.gitignore`: excluye entorno, cachés, dependencias y secretos.
-- `enlace_repositorio.txt`: URL del repositorio para adjuntar en la plataforma de entrega.
+Una mejora sería incorporar un diccionario de sinónimos del área de programación y
+normalizar tanto las etiquetas como los intereses antes de vectorizarlos. Ese
+diccionario tendría que definir equivalencias revisadas, por ejemplo entre
+«gráficas» y «graficos», y se necesitarían nuevas pruebas para comprobar
+que las equivalencias no introduzcan recomendaciones incorrectas. El resto del
+cálculo con TF-IDF y coseno podría mantenerse.
 
-Repositorio de entrega: https://github.com/German-Oses/laboratorio3
+## Problemas encontrados
 
-Adjuntar `enlace_repositorio.txt` en la plataforma de entrega. El repositorio es
-público para permitir acceso a la docente. El ZIP es una copia de respaldo;
-la entrega solicitada se realiza por enlace al repositorio.
+La preparación del entorno presentó dificultades con `ensurepip` y con los permisos
+de la carpeta temporal. Se resolvió instalando las dependencias en el entorno
+virtual desde el pip del intérprete base, usando una carpeta temporal con permiso
+de escritura. Las evidencias se generaron ejecutando directamente el Python de ese
+entorno, ubicado en `work/venv/Scripts/python.exe` durante la preparación.
+
+En los resultados, la similitud inicial de R02 aparece en el CSV como
+`1.0000000000000002`. Esa pequeña diferencia respecto de 1 se debe a la precisión
+de los números de punto flotante; en la consola se muestra como `1.0000`. Los
+valores originales se conservaron en las evidencias. Los pesos del perfil que
+muestra el reporte están redondeados a seis decimales por la función auxiliar.
+
+No se detectaron fallos en T1–T4 ni en las pruebas adicionales. Aun así, estas
+pruebas corresponden al catálogo del laboratorio y no permiten afirmar cómo se
+comportaría el recomendador con cualquier conjunto de recursos. Además, el estado
+se conserva solo durante la sesión, por lo que cerrar la aplicación elimina las
+valoraciones realizadas.
+
+## Archivos de la entrega
+
+El código está en `motor.py` y `app.py`, y los datos originales se encuentran en
+`datos/`. El archivo `evidencias/reporte_demo.json` contiene los perfiles, las
+recomendaciones, los eventos y las comprobaciones de la demostración.
+`evidencias/puntuaciones_antes_despues.csv` registra las puntuaciones de los mismos
+12 recursos antes y después de valorar R04. Ambos archivos fueron generados por
+la ejecución de la implementación.
+
+El repositorio incluye también las pruebas adicionales, este informe,
+`requirements.txt` y `.gitignore`. El entorno virtual, las cachés y las dependencias
+instaladas quedan fuera de la entrega. El archivo `enlace_repositorio.txt` contiene
+la URL del repositorio público para adjuntarlo en la plataforma del curso.
