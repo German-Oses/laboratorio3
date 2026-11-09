@@ -1,6 +1,6 @@
 # Laboratorio 3: aplicación inteligente adaptativa
 
-**Integrantes:** German Oses, Joshua Villavicencio y Fernando Figueroa  
+**Integrantes:** German Oses y Joshua Villavicencio  
 **Asignatura:** Ingeniería Web Avanzada, OII436-1  
 **Fecha:** 9 de noviembre de 2026  
 **Repositorio:** https://github.com/German-Oses/laboratorio3
